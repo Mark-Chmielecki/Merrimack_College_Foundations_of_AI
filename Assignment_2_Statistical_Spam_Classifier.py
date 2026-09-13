@@ -23,7 +23,6 @@ def statistical_classifier(train_messages, train_labels, test_message):
     vectorizer = CountVectorizer() #instantiating vectorizer as a CountVectorizer object
 
     X_train = vectorizer.fit_transform(train_messages) #passes in raw documents
-    print(x_train)
 
     model = MultinomialNB()
 
@@ -42,10 +41,24 @@ def main():
     # I've left in some test cases in comments.                                 #
     #############################################################################
 
-    train_messages = "BUY NOW"
-    train_lables = "BUY"
-    test_message = "BUY NOW!!! Limited time offer $$$"
-    #string = "Can we meet at 3pm tomorrow?"
+    train_messages = [
+        "BUY NOW", 
+        "Limited time offer", 
+        "Exclusive deal", 
+        "Can we meet at 3pm tomorrow?",
+        "Please send me the updated Powerpoint deck"
+    ]
+    
+    train_lables = [
+        "Spam",
+        "Spam",
+        "Spam",
+        "Not Spam",
+        "Not Spam"]
+    
+    #test_message = "BUY NOW!!! Limited time offer $$$"
+    test_message = "Catch up with you tomorrow"
+    
 
    
     statistical_classifier_answer = statistical_classifier(train_messages, train_lables, test_message)
