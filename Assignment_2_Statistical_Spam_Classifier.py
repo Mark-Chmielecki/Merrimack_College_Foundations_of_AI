@@ -1,5 +1,5 @@
 #########################################################################################
-# Research by Mark Chmielecki for CS6313 - Foundations of Artificial Intelligence       #
+#      #
 # Project 2 due Monday, September 14, 2026.                                             #
 #                                                                                       #
 # Questions from assignment:                                                            #
