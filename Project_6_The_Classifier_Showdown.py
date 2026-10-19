@@ -9,6 +9,9 @@ Project requirements:
 4) Terminal Interference and Accuracy - report accuracy scores in terminal
 5) Visualization - I added a 2*3 grid, including feature importance and tree structure for each model.  Since 
 6) Interactive Terminal Interference - prompt user, run through each model and vote on "Healthy" or "At Risk" 
+
+UPDATED 10/15: moved splitting to before preprossing in main(), updated preprocessing function to take into account training and test date.
+I got this wrong in Project 5, go the okay to resubmit per conversation with Maggie M on 10/15.  This was the only change in the code.
 """
 import numpy as np                                                      # need for synthetic data generation and calculations
 import pandas as pd                                                     # needed for data manipulation and saving to CSV
@@ -61,36 +64,37 @@ def load_data_from_csv(filename):
     """Generic function to load the data from a CSV file."""
     return pd.read_csv(filename)
 
-def preprocess_data(data):
-    """Function to preprocess the data by filling in missing values and scaling the features, part of requirement #2."""
-    
-    scaler = None   # Initialize scaler and imputer to None before preprocessing
-    imputer = None  # Initialize scaler and imputer to None before preprocessing
-
-    # Separate features from target
-    X = data[['Age', 'BMI', 'Blood Sugar']]
-    y = data['Diagnosis']
-
-    # Fill missing values in the features
+def preprocess_data(X_train, X_test):
+    """Function to preprocess the data by filling in missing values and scaling the features, part of requirement #2.
+       Updated on 10/15 to input and scale after splitting, preventing data leakage. 
+    """
+    # STEP 1: Create the imputer
     imputer = SimpleImputer(strategy="median")
-    X_imputed = imputer.fit_transform(X)
 
-    X_imputed_df = pd.DataFrame(X_imputed,columns=['Age', 'BMI', 'Blood Sugar'])
+    # STEP 2: Learn the medians from training data only
+    X_train_imputed = imputer.fit_transform(X_train)
+    X_train_imputed_df = pd.DataFrame(X_train_imputed,columns=X_train.columns,index=X_train.index)
 
-    # Scale only the features
+    # STEP 3: Use those same medians on testing data
+    X_test_imputed = imputer.transform(X_test)
+    X_test_imputed_df = pd.DataFrame(X_test_imputed,columns=X_test.columns,index=X_test.index)
+
+    # STEP 4: Create the scaler
     scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X_imputed_df)
 
-    # Put the scaled features back into a DataFrame
-    X_scaled_df = pd.DataFrame(X_scaled,columns=['Age', 'BMI', 'Blood Sugar']
-    )
-    # Add the original Diagnosis back
-    X_scaled_df['Diagnosis'] = y.values
+    # STEP 5: Learn the scaling parameters from training data only
+    X_train_scaled = scaler.fit_transform(X_train_imputed_df)
 
-    # Save the processed data
-    X_scaled_df.to_csv('classifier_patient_data.csv', index=False)
+    # STEP 6: Apply the same scaling parameters to testing data
+    X_test_scaled = scaler.transform(X_test_imputed_df)
 
-    return scaler, imputer
+    # STEP 7: Convert results back to DataFrames with feature names
+    X_train_scaled_df = pd.DataFrame(X_train_scaled,columns=X_train.columns,index=X_train.index)
+
+    X_test_scaled_df = pd.DataFrame(X_test_scaled,columns=X_test.columns,index=X_test.index)
+
+    # Return the transformed data and fitted preprocessing objects
+    return X_train_scaled_df, X_test_scaled_df, scaler, imputer
 
 def split_data(data, test_size=0.2):
     """Function to split the data into training and testing sets, required before you move to requirement #3, training."""
@@ -171,18 +175,14 @@ def main():
    
     # Calculate diagnosis on synthetic data, and save to .csv - Requirement 1
     save_data_to_csv(calculate_diagnosis(age, bmi, blood_sugar), 'classifier_patient_data.csv')
-    # create data frame with raw data - Requirement 1
+    # load unscaled data frame with raw data - Requirement 1
     health_data_frame = load_data_from_csv('classifier_patient_data.csv')
-   
-    # Preproscess data - Requirement 2
-    scaler, imputer = preprocess_data(health_data_frame)
-    
-    # Save scaled data back to csv - Requirement 2
-    health_data_frame = load_data_from_csv('classifier_patient_data.csv')
-    print("Dataset saved to: classifier_patient_data.csv")
-    
-    # Split data - Requirement 3
+ 
+    # Split the data BEFORE preprocessing (change on 10/15 per conversation with Maggie M)
     X_train, X_test, y_train, y_test = split_data(health_data_frame)
+
+    # Preprocess after splitting (change on 10/15 per conversation with Maggie M)
+    X_train, X_test, scaler, imputer = preprocess_data(X_train, X_test)
     
     # Train 3 models, report accururacy of each - Requirements 3 and 4
     decision_tree_model = train_decision_tree_classifier_model(X_train, y_train)
